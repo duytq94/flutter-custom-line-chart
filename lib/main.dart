@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_custom_line_chart/line_chart_page.dart';
+import 'package:flutter_custom_line_chart/main_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LineChartPage(),
+      home: const MainPage(),
     );
   }
 }
