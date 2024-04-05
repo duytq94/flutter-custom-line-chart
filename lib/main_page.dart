@@ -11,9 +11,7 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final _heightChart = 200.0;
-  final _backgroundColorChart = const Color(0xffFBFBFB);
-  final _mainColorChart = const Color(0xff9493C8);
+  final _heightChart = 250.0;
   final _refreshChart$ = StreamController<Key>();
 
   @override
@@ -45,16 +43,15 @@ class _MainPageState extends State<MainPage> {
           ),
         ],
       ),
-      backgroundColor: const Color(0xffE5E9EF),
       body: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(8),
         child: Container(
           clipBehavior: Clip.hardEdge,
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xffEBEBEB)),
-            color: _backgroundColorChart,
+            color: Colors.black12,
           ),
           child: StreamBuilder<Key>(
             stream: _refreshChart$.stream,
@@ -63,8 +60,6 @@ class _MainPageState extends State<MainPage> {
               return LineChartView(
                 key: snapshot.data,
                 heightChart: _heightChart,
-                backgroundColorChart: _backgroundColorChart,
-                mainColorChart: _mainColorChart,
               );
             },
           ),

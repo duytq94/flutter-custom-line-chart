@@ -10,8 +10,6 @@ class LineChartPainter extends CustomPainter {
   final double heightView;
   final double minWeight;
   final double maxWeight;
-  final Color mainColor;
-  final Color backgroundColor;
   final BuildContext context;
   final Function(MyWeight myWeight) onPointClick;
 
@@ -20,11 +18,12 @@ class LineChartPainter extends CustomPainter {
     required this.heightView,
     required this.minWeight,
     required this.maxWeight,
-    required this.mainColor,
-    required this.backgroundColor,
     required this.context,
     required this.onPointClick,
   });
+
+  final _mainColor = const Color(0xff4259A4);
+  final _backgroundColor = Colors.white;
 
   // range max min for Y axis
   late final ceilMax = maxWeight.ceil() + 1.0;
@@ -38,58 +37,68 @@ class LineChartPainter extends CustomPainter {
   final paddingRight = 10.0;
 
   final tooltipLabelStyle = const TextStyle(color: Colors.white, fontSize: 12);
-  final xAxisLabelStyle = const TextStyle(color: Color(0xff575757), fontSize: 8);
-  final yAxisLabelStyle = const TextStyle(color: Color(0xffACACAC), fontSize: 10);
+  final xAxisLabelStyle = const TextStyle(color: Color(0xff83808C), fontSize: 8);
+  final yAxisLabelStyle = const TextStyle(color: Color(0xffAAA8B1), fontSize: 10);
 
   late final pointInnerPaint = Paint()
-    ..color = mainColor
+    ..color = _mainColor
     ..style = PaintingStyle.fill;
+
   final pointFocusingOuterPaint = Paint()
     ..color = Colors.white
     ..style = PaintingStyle.fill;
+
   final pointOuterPaint = Paint()
     ..color = Colors.white.withOpacity(0.5)
     ..style = PaintingStyle.fill;
+
   late final tooltipPaint = Paint()
-    ..color = mainColor
+    ..color = Colors.black
     ..style = PaintingStyle.fill;
+
   late final connectPathPaint = Paint()
-    ..color = mainColor
+    ..color = _mainColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
+
+  late final outlinePathPaint = Paint()
     ..style = PaintingStyle.fill
     ..shader = ui.Gradient.linear(
       Offset.zero,
       Offset(0, heightView),
       [
-        mainColor.withOpacity(1),
-        const Color(0xffBAE6FF).withOpacity(0),
+        _mainColor.withOpacity(0.32),
+        _mainColor.withOpacity(0),
       ],
     );
-  late final columnFocusingPaint = Paint()
-    ..color = mainColor
+
+  final columnFocusingPaint = Paint()
     ..style = PaintingStyle.fill
-    ..shader = ui.Gradient.linear(
-      Offset.zero,
-      Offset(0, heightView),
-      [
-        const Color(0xff0D25FA).withOpacity(0.4),
-        const Color(0xff0D25FA).withOpacity(0),
-      ],
-    );
+    ..color = const Color(0xffE6EAF6).withOpacity(0.5);
+
+  final tappableColumnPaint = Paint()
+    ..style = PaintingStyle.fill
+    ..color = Colors.transparent;
+
   final outlinePaint = Paint()
     ..strokeWidth = 1
     ..style = PaintingStyle.stroke
-    ..color = const Color(0xffE5E9EF);
+    ..color = const Color(0xffF4F4F4);
+
+  final dottedLinePaint = Paint()
+    ..color = const Color(0xff83808C)
+    ..strokeWidth = 1;
 
   @override
   void paint(Canvas canvas, Size size) {
     final touchyCanvas = TouchyCanvas(context, canvas);
 
     // frame
-    final clipRect = Rect.fromLTRB(0, 0, size.width, size.height);
-    canvas.clipRect(clipRect);
+    final clipRRect = RRect.fromLTRBR(0, 0, size.width, size.height, const Radius.circular(4));
+    canvas.clipRRect(clipRRect);
 
     // fill background color
-    final paint = Paint()..color = backgroundColor;
+    final paint = Paint()..color = _backgroundColor;
     canvas.drawPaint(paint);
 
     // compute the drawable chart width and height
@@ -107,44 +116,12 @@ class LineChartPainter extends CustomPainter {
 
     final center = Offset(paddingLeft + widthColumn / 2, paddingTop + heightColumn / 2);
 
-    final points = _computePoints(center, widthColumn, heightColumn, heightRatio, myWeightProgress);
+    final points = _computePoints(center, widthColumn, heightColumn, heightRatio);
 
-    // draw connect path
-    final path = _computePath(
-      points: points,
-      paddingLeft: paddingLeft,
-      widthColumn: widthColumn,
-      maxDx: size.width - paddingRight - widthColumn / 2,
-      maxDy: size.height,
-    );
-    canvas.drawPath(path, connectPathPaint);
-
-    // draw X axis labels
-    final xLabels = _computeXLabels(myWeightProgress);
-    _drawXAxisLabels(
-      canvas: canvas,
-      center: center,
-      labels: xLabels,
-      points: points,
-      labelStyle: xAxisLabelStyle,
-      labelMaxWidth: widthColumn,
-      labelMarginTop: drawableHeight + paddingTop + 8,
-    );
-
-    // draw Y axis labels
-    final yLabels = _computeYLabels(qtyYLabels);
     final yPositions = _computeYPositions(
       paddingTop: paddingTop,
       heightRatio: heightColumn / (qtyYLabels - 1),
       qty: qtyYLabels,
-    );
-    _drawYAxisLabels(
-      canvas: canvas,
-      center: center,
-      labels: yLabels,
-      positions: yPositions,
-      labelStyle: yAxisLabelStyle,
-      labelMaxWidth: paddingLeft,
     );
 
     // draw horizontal outline
@@ -153,23 +130,64 @@ class LineChartPainter extends CustomPainter {
       positions: yPositions,
       startDx: paddingLeft,
       endDx: size.width - paddingRight,
-      paint: outlinePaint,
     );
 
     // draw vertical outline
-    _drawVerticalOutline(canvas, center, widthColumn, heightColumn, myWeightProgress, outlinePaint);
+    _drawVerticalOutline(
+      canvas,
+      center,
+      widthColumn,
+      heightColumn,
+    );
+
+    // draw connect path
+    final connectPath = _computeConnectPath(
+      points: points,
+      paddingLeft: paddingLeft,
+      widthColumn: widthColumn,
+      maxDx: size.width - paddingRight - widthColumn / 2,
+      maxDy: size.height,
+    );
+    canvas.drawPath(connectPath, connectPathPaint);
+
+    // draw border path
+    final borderPath = _computeBorderPath(
+      points: points,
+      paddingLeft: paddingLeft,
+      widthColumn: widthColumn,
+      maxDy: size.height,
+    );
+    canvas.drawPath(borderPath, outlinePathPaint);
+
+    // draw X axis labels
+    final xLabels = _computeXLabels(myWeightProgress);
+    _drawXAxisLabels(
+      canvas: canvas,
+      center: center,
+      labels: xLabels,
+      points: points,
+      labelMaxWidth: widthColumn,
+      labelMarginTop: drawableHeight + paddingTop + 8,
+    );
+
+    // draw Y axis labels
+    final yLabels = _computeYLabels(qtyYLabels);
+    _drawYAxisLabels(
+      canvas: canvas,
+      center: center,
+      labels: yLabels,
+      positions: yPositions,
+      labelMaxWidth: paddingLeft,
+    );
 
     // draw points
     _drawPoints(
       points: points,
       touchyCanvas: touchyCanvas,
-      myWeightProgress: myWeightProgress,
-      pointInnerPaint: pointInnerPaint,
-      pointFocusingOuterPaint: pointFocusingOuterPaint,
-      pointOuterPaint: pointOuterPaint,
-      columnFocusingPaint: columnFocusingPaint,
+      canvas: canvas,
       maxDy: size.height,
-      onPointClick: onPointClick,
+      drawableHeight: drawableHeight,
+      widthFocusingColumn: widthColumn,
     );
 
     // draw tooltip
@@ -179,29 +197,8 @@ class LineChartPainter extends CustomPainter {
       center: center,
       labels: tooltipLabels,
       points: points,
-      labelStyle: tooltipLabelStyle,
       labelMaxWidth: 62,
-      myWeightProgress: myWeightProgress,
-      paint: tooltipPaint,
     );
-  }
-
-  void _drawYAxisLabels({
-    required Canvas canvas,
-    required Offset center,
-    required List<String> labels,
-    required List<Offset> positions,
-    required TextStyle labelStyle,
-    required double labelMaxWidth,
-  }) {
-    for (var i = 0; i < labels.length; i++) {
-      final label = labels[i];
-      final yPoint = positions[i];
-      final textPainter = _getTextPainter(label, labelStyle, labelMaxWidth);
-      final position = Offset(0, yPoint.dy - textPainter.height / 2);
-      textPainter.paint(canvas, position);
-      center += Offset(labelMaxWidth, 0);
-    }
   }
 
   void _drawHorizontalOutline({
@@ -209,13 +206,42 @@ class LineChartPainter extends CustomPainter {
     required List<Offset> positions,
     required double startDx,
     required double endDx,
-    required Paint paint,
   }) {
     for (var position in positions) {
       final path = Path();
       path.moveTo(startDx, position.dy);
       path.lineTo(endDx, position.dy);
-      canvas.drawPath(path, paint);
+      canvas.drawPath(path, outlinePaint);
+    }
+  }
+
+  void _drawVerticalOutline(
+    Canvas canvas,
+    Offset center,
+    double width,
+    double height,
+  ) {
+    for (var _ in myWeightProgress) {
+      final rect = Rect.fromCenter(center: center, width: width, height: height);
+      canvas.drawRect(rect, outlinePaint);
+      center += Offset(width, 0);
+    }
+  }
+
+  void _drawYAxisLabels({
+    required Canvas canvas,
+    required Offset center,
+    required List<String> labels,
+    required List<Offset> positions,
+    required double labelMaxWidth,
+  }) {
+    for (var i = 0; i < labels.length; i++) {
+      final label = labels[i];
+      final yPoint = positions[i];
+      final textPainter = _getTextPainter(label, yAxisLabelStyle, labelMaxWidth);
+      final position = Offset(0, yPoint.dy - textPainter.height / 2);
+      textPainter.paint(canvas, position);
+      center += Offset(labelMaxWidth, 0);
     }
   }
 
@@ -224,14 +250,13 @@ class LineChartPainter extends CustomPainter {
     required Offset center,
     required List<String> labels,
     required List<Offset> points,
-    required TextStyle labelStyle,
     required double labelMaxWidth,
     required double labelMarginTop,
   }) {
     for (var i = 0; i < labels.length; i++) {
       final label = labels[i];
       final point = points[i];
-      final textPainter = _getTextPainter(label, labelStyle, labelMaxWidth);
+      final textPainter = _getTextPainter(label, xAxisLabelStyle, labelMaxWidth);
       final position = Offset(point.dx - textPainter.width / 2, labelMarginTop);
       textPainter.paint(canvas, position);
       center += Offset(labelMaxWidth, 0);
@@ -243,10 +268,7 @@ class LineChartPainter extends CustomPainter {
     required Offset center,
     required List<String> labels,
     required List<Offset> points,
-    required TextStyle labelStyle,
     required double labelMaxWidth,
-    required List<MyWeight> myWeightProgress,
-    required Paint paint,
   }) {
     // labels and points must be the same length
     for (var i = 0; i < labels.length; i++) {
@@ -254,7 +276,7 @@ class LineChartPainter extends CustomPainter {
       final label = labels[i];
       final point = points[i];
 
-      final textPainter = _getTextPainter(label, labelStyle, labelMaxWidth);
+      final textPainter = _getTextPainter(label, tooltipLabelStyle, labelMaxWidth);
       final myWeight = myWeightProgress[i];
       final position = point +
           Offset(-textPainter.width / 2, -textPainter.height / 2) +
@@ -273,7 +295,7 @@ class LineChartPainter extends CustomPainter {
             point.dy - spaceBetweenPointAndTooltip,
             const Radius.circular(12),
           ),
-          paint,
+          tooltipPaint,
         );
 
         // draw triangle
@@ -284,12 +306,64 @@ class LineChartPainter extends CustomPainter {
           ..lineTo(point.dx, point.dy - spaceBetweenPointAndTooltip + triangleH)
           ..lineTo(point.dx + triangleW / 2, point.dy - spaceBetweenPointAndTooltip)
           ..lineTo(point.dx - triangleW / 2, point.dy - spaceBetweenPointAndTooltip);
-        canvas.drawPath(trianglePath, paint);
+        canvas.drawPath(trianglePath, tooltipPaint);
 
         // draw text label
         textPainter.paint(canvas, position);
       }
       center += Offset(labelMaxWidth, 0);
+    }
+  }
+
+  void _drawPoints({
+    required List<Offset> points,
+    required TouchyCanvas touchyCanvas,
+    required Canvas canvas,
+    required double maxDy,
+    required double drawableHeight,
+    required double widthFocusingColumn,
+  }) {
+    for (var i = 0; i < points.length; i++) {
+      final point = points[i];
+      final myWeight = myWeightProgress[i];
+      const radiusOuterCircle = 8.0;
+      const radiusInnerCircle = 4.0;
+      // draw column focusing
+      final columnFocusing = RRect.fromLTRBR(
+        point.dx - widthFocusingColumn / 2,
+        paddingTop,
+        point.dx + widthFocusingColumn / 2,
+        maxDy,
+        const Radius.circular(8),
+      );
+      touchyCanvas.drawRRect(
+        columnFocusing,
+        myWeight.isFocusing ? columnFocusingPaint : tappableColumnPaint,
+        onTapDown: (_) => onPointClick(myWeight),
+      );
+      // draw dotted line
+      if (myWeight.isFocusing) {
+        double startY = paddingTop;
+        const dashHeight = 3, dashSpace = 3;
+        while (startY < drawableHeight + paddingTop) {
+          canvas.drawLine(Offset(point.dx, startY), Offset(point.dx, startY + 2), dottedLinePaint);
+          startY += dashHeight + dashSpace;
+        }
+      }
+      // draw outer circle
+      touchyCanvas.drawCircle(
+        point,
+        radiusOuterCircle,
+        myWeight.isFocusing ? pointFocusingOuterPaint : pointOuterPaint,
+        onTapDown: (_) => onPointClick(myWeight),
+      );
+      // draw inner circle
+      touchyCanvas.drawCircle(
+        point,
+        radiusInnerCircle,
+        pointInnerPaint,
+        onTapDown: (_) => onPointClick(myWeight),
+      );
     }
   }
 
@@ -336,7 +410,6 @@ class LineChartPainter extends CustomPainter {
     double widthColumn,
     double heightColumn,
     double heightRatio,
-    List<MyWeight> myWeightProgress,
   ) {
     final points = <Offset>[];
     for (var myWeight in myWeightProgress) {
@@ -348,7 +421,7 @@ class LineChartPainter extends CustomPainter {
     return points;
   }
 
-  Path _computePath({
+  Path _computeConnectPath({
     required List<Offset> points,
     required double paddingLeft,
     required double widthColumn,
@@ -380,70 +453,47 @@ class LineChartPainter extends CustomPainter {
         );
       }
     }
-
-    // close path to fill out color from path to bottom
-    path.lineTo(maxDx, maxDy);
-    path.lineTo(paddingLeft + widthColumn / 2, maxDy);
-
     return path;
   }
 
-  void _drawVerticalOutline(
-    Canvas canvas,
-    Offset center,
-    double width,
-    double height,
-    List<MyWeight> myWeightProgress,
-    Paint paint,
-  ) {
-    for (var _ in myWeightProgress) {
-      final rect = Rect.fromCenter(center: center, width: width, height: height);
-      canvas.drawRect(rect, paint);
-      center += Offset(width, 0);
-    }
-  }
-
-  void _drawPoints({
+  Path _computeBorderPath({
     required List<Offset> points,
-    required TouchyCanvas touchyCanvas,
-    required List<MyWeight> myWeightProgress,
-    required Paint pointInnerPaint,
-    required Paint pointFocusingOuterPaint,
-    required Paint pointOuterPaint,
-    required Paint columnFocusingPaint,
+    required double paddingLeft,
+    required double widthColumn,
     required double maxDy,
-    required Function(MyWeight myWeight) onPointClick,
   }) {
+    final path = Path();
+    // separate width column into 3 parts (for control points of cubicTo)
+    final segWidth = widthColumn / 3;
     for (var i = 0; i < points.length; i++) {
-      final point = points[i];
-      final myWeight = myWeightProgress[i];
-      const radiusOuterCircle = 8.0;
-      const radiusInnerCircle = 4.0;
-      if (myWeight.isFocusing) {
-        // draw column focusing
-        final column = Rect.fromLTRB(
-          point.dx - radiusOuterCircle,
-          point.dy,
-          point.dx + radiusOuterCircle,
-          maxDy,
+      final currentPoint = points[i];
+      if (i == 0) {
+        path.moveTo(currentPoint.dx, currentPoint.dy);
+      } else {
+        // draw straight line
+        // path.lineTo(p.dx, p.dy);
+
+        // draw curved line
+        final previousPoint = points[i - 1];
+        final initialPaddingLeft = paddingLeft + widthColumn / 2;
+        // use cubicTo instead of lineTo to make curved line
+        path.cubicTo(
+          initialPaddingLeft + (widthColumn * (i - 1)) + segWidth,
+          previousPoint.dy,
+          initialPaddingLeft + (widthColumn * (i - 1)) + segWidth * 2,
+          currentPoint.dy,
+          currentPoint.dx,
+          currentPoint.dy,
         );
-        touchyCanvas.drawRect(column, columnFocusingPaint);
       }
-      // draw outer circle
-      touchyCanvas.drawCircle(
-        point,
-        radiusOuterCircle,
-        myWeight.isFocusing ? pointFocusingOuterPaint : pointOuterPaint,
-        onTapDown: (_) => onPointClick(myWeight),
-      );
-      // draw inner circle
-      touchyCanvas.drawCircle(
-        point,
-        radiusInnerCircle,
-        pointInnerPaint,
-        onTapDown: (_) => onPointClick(myWeight),
-      );
     }
+
+    // close path to fill out color from path to bottom
+    path.lineTo(points.last.dx, maxDy);
+    path.lineTo(points.first.dx, maxDy);
+    path.lineTo(points.first.dx, points.first.dy);
+
+    return path;
   }
 
   @override

@@ -7,14 +7,10 @@ import 'package:touchable/touchable.dart';
 
 class LineChartView extends StatefulWidget {
   final double heightChart;
-  final Color backgroundColorChart;
-  final Color mainColorChart;
 
   const LineChartView({
     super.key,
     required this.heightChart,
-    required this.backgroundColorChart,
-    required this.mainColorChart,
   });
 
   @override
@@ -94,8 +90,6 @@ class _LineChartViewState extends State<LineChartView> with SingleTickerProvider
             heightView: widget.heightChart,
             minWeight: _minWeight,
             maxWeight: _maxWeight,
-            mainColor: widget.mainColorChart,
-            backgroundColor: widget.backgroundColorChart,
             context: context,
             onPointClick: (myWeight) {
               for (var e in _myWeightProgressAnim) {
