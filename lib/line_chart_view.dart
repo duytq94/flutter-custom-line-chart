@@ -19,7 +19,7 @@ class LineChartView extends StatefulWidget {
 
 class _LineChartViewState extends State<LineChartView> with SingleTickerProviderStateMixin {
   // this list keep the original value generated
-  var _myWeightProgressGenerated = <MyWeight>[];
+  late final List<MyWeight> _myWeightProgressGenerated = _genDataList();
 
   // this list will change to serve the animation
   var _myWeightProgressAnim = <MyWeight>[];
@@ -33,7 +33,6 @@ class _LineChartViewState extends State<LineChartView> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _myWeightProgressGenerated = _genDataList();
     _startListenAnimation();
     _controller.forward();
   }
@@ -94,7 +93,7 @@ class _LineChartViewState extends State<LineChartView> with SingleTickerProvider
             onPointClick: (myWeight) {
               for (var e in _myWeightProgressAnim) {
                 if (e == myWeight) {
-                  e.isFocusing = true;
+                  e.isFocusing = !e.isFocusing;
                 } else {
                   e.isFocusing = false;
                 }

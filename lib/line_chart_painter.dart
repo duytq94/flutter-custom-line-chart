@@ -489,9 +489,11 @@ class LineChartPainter extends CustomPainter {
     }
 
     // close path to fill out color from path to bottom
-    path.lineTo(points.last.dx, maxDy);
-    path.lineTo(points.first.dx, maxDy);
-    path.lineTo(points.first.dx, points.first.dy);
+    if (points.isNotEmpty) {
+      path.lineTo(points.last.dx, maxDy);
+      path.lineTo(points.first.dx, maxDy);
+      path.lineTo(points.first.dx, points.first.dy);
+    }
 
     return path;
   }
